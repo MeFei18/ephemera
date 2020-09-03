@@ -2,3 +2,6 @@
 yarn-debug.log*
 yarn-error.log*
 yarn.*
+
+# node 相关
+/bin
