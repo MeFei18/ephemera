@@ -12,7 +12,7 @@
 process.env.BABEL_ENV = "development";
 process.env.NODE_ENV = "development";
 
-import { readEnvironment } from "./utils/env";
+import { loadEnvironment } from "./utils/env";
 
 /**
  * 遇到错误且未捕获时，让系统崩溃
@@ -21,7 +21,7 @@ process.on("unhandledRejection", (err) => {
     throw err;
 });
 
-readEnvironment();
+loadEnvironment();
 
 // for (const key in process.env) {
 //     console.log(key, "===========", process.env[key]);

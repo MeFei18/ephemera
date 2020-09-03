@@ -13,12 +13,21 @@ import paths from "./paths";
 /**
  * 加载环境变量
  */
-export const readEnvironment = () => {
+export const loadEnvironment = () => {
     const NODE_ENV = process.env.NODE_ENV;
-    process.env.PUBLIC_URL = "index";
     if (!NODE_ENV) {
         throw new Error("缺少环境变量 NODE_ENV");
     }
 
-    // console.log(paths.publicUrlOrPath);
+    const dotenvFiles = [
+        `${paths.dotenv}.${NODE_ENV}.local`,
+        `${paths.dotenv}.${NODE_ENV}`,
+        NODE_ENV !== "test" ? `${paths.dotenv}.local` : "",
+        paths.dotenv,
+    ].filter((x) => x);
+
+    // dotenvFiles.forEach((dotenvFile) => {
+    //     if(fs.existsSync(dotenvFile))
+    // });
+    console.log(dotenvFiles);
 };

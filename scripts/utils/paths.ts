@@ -35,9 +35,29 @@ const moduleFileExtensions = [
 ];
 
 const resolveModule = (filePath: string) => {
-    const extension = moduleFileExtensions.find((ex) => {
-        fs.existsSync(resolveApp(`${filePath}.${ex}`));
-    });
+    const extension = moduleFileExtensions.find((ex) =>
+        fs.existsSync(resolveApp(`${filePath}.${ex}`))
+    );
+    if (extension) {
+        return resolveApp(`${filePath}.${extension}`);
+    }
+    return resolveApp(`${filePath}.js`);
 };
 
-export default { publicUrlOrPath };
+export default {
+    dotenv: resolveApp(".env"),
+    appPath: resolveApp("."),
+    appBuild: resolveApp("dist"),
+    appPublic: resolveApp("public"),
+    appHtml: resolveApp("public/index.html"),
+    appIndexJs: resolveModule("src/index"),
+    appPackageJson: resolveApp("package.json"),
+    appSrc: resolveApp("src"),
+    appTsConfig: resolveApp("tsconfig.json"),
+    appJsConfig: resolveApp("jsconfig.json"),
+    yarnLockFile: resolveApp("yarn.lock"),
+    testsSetup: resolveModule("src/setupTests"),
+    proxySetup: resolveApp("src/setupProxy.js"),
+    appNodeModules: resolveApp("node_modules"),
+    publicUrlOrPath,
+};
