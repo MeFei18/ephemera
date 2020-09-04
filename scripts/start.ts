@@ -21,8 +21,20 @@ process.on("unhandledRejection", (err) => {
     throw err;
 });
 
+/**
+ * 加载环境变量
+ */
 loadEnvironment();
 
-for (const key in process.env) {
-    console.log(key, "===========", process.env[key]);
+import fs from "fs";
+import webpack from "webpack";
+import paths from "./utils/paths";
+import webpackDevServer from "webpack-dev-server";
+
+import { checkRequiredFiles, clearConsole } from "./utils/lib";
+
+// clearConsole();
+
+if (!checkRequiredFiles([paths.appHtml, paths.appIndexJs])) {
+    process.exit(1);
 }
