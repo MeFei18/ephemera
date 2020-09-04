@@ -9,7 +9,7 @@
 import fs from "fs";
 import path from "path";
 // import getPublicUrlOrPath from "react-dev-utils/getPublicUrlOrPath";
-import { getPublicUrlOrPath } from "./getPublicUrlOrPath";
+import { getPublicUrlOrPath } from "./lib/getPublicUrlOrPath";
 
 const appDirectory = fs.realpathSync(process.cwd());
 const resolveApp = (relativePath: string) => path.resolve(appDirectory, relativePath);
