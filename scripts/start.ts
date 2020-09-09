@@ -9,10 +9,19 @@
 /**
  * 初始化环境变量为 development
  */
+import fs from "fs";
+import webpack from "webpack";
+import paths from "./utils/paths";
+import { loadEnvironment } from "./utils/env";
+import webpackDevServer from "webpack-dev-server";
+import chalk from "chalk";
+
+import { checkRequiredFiles, clearConsole } from "./utils/lib";
+
 process.env.BABEL_ENV = "development";
 process.env.NODE_ENV = "development";
 
-import { loadEnvironment } from "./utils/env";
+const isInteractive = process.stdout.isTTY;
 
 /**
  * 遇到错误且未捕获时，让系统崩溃
@@ -26,15 +35,15 @@ process.on("unhandledRejection", (err) => {
  */
 loadEnvironment();
 
-import fs from "fs";
-import webpack from "webpack";
-import paths from "./utils/paths";
-import webpackDevServer from "webpack-dev-server";
-
-import { checkRequiredFiles, clearConsole } from "./utils/lib";
-
-// clearConsole();
-
 if (!checkRequiredFiles([paths.appHtml, paths.appIndexJs])) {
     process.exit(1);
 }
+
+const DEFAULT_PORT = parseInt(process.env.PORT || "3000", 10);
+const HOST = process.env.HOST || "0.0.0.0";
+
+if (process.env.HOST) {
+    console.log(chalk.cyan(`Attempting to bind to HOST environment variable: ${chalk.yellow.bold(process.env.HOST)}`));
+}
+
+console.log(isInteractive, paths.appPath);

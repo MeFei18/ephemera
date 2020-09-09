@@ -2,6 +2,10 @@ import fs from "fs";
 import path from "path";
 import chalk from "chalk";
 
+/**
+ * 检查文件是否存在
+ * @param files 文件列表
+ */
 export const checkRequiredFiles = (files: string[]) => {
     let currentFilePath = "";
     try {
