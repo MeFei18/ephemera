@@ -32,6 +32,7 @@
         ]
     },
     "scripts": {
-        "start": "ts-node scripts/start.ts"
+        "start": "ts-node scripts/start.ts",
+        "test": "ts-node "
     }
 }
