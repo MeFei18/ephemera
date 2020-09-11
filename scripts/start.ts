@@ -16,7 +16,7 @@ import { loadEnvironment } from "./utils/env";
 import webpackDevServer from "webpack-dev-server";
 import chalk from "chalk";
 
-import { checkRequiredFiles, clearConsole, checkBrowsers } from "./utils/lib";
+import { checkRequiredFiles, clearConsole, checkBrowsers, choosePort } from "./utils/lib";
 
 process.env.BABEL_ENV = "development";
 process.env.NODE_ENV = "development";
@@ -43,13 +43,15 @@ const DEFAULT_PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 
 if (process.env.HOST) {
-    console.log(
-        chalk.cyan(
-            `Attempting to bind to HOST environment variable: ${chalk.yellow.bold(
-                process.env.HOST
-            )}`
-        )
-    );
+    console.log(chalk.cyan(`Attempting to bind to HOST environment variable: ${chalk.yellow.bold(process.env.HOST)}`));
 }
 
-checkBrowsers(paths.appPath, isInteractive);
+checkBrowsers(paths.appPath)
+    .then(() => {
+        const port = choosePort(HOST, DEFAULT_PORT);
+        console.log(port);
+        return "helo";
+    })
+    .then((v) => {
+        console.log(v);
+    });
