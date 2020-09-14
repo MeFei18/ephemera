@@ -43,15 +43,21 @@ const DEFAULT_PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 
 if (process.env.HOST) {
-    console.log(chalk.cyan(`Attempting to bind to HOST environment variable: ${chalk.yellow.bold(process.env.HOST)}`));
+    console.log(
+        chalk.cyan(
+            `Attempting to bind to HOST environment variable: ${chalk.yellow.bold(
+                process.env.HOST
+            )}`
+        )
+    );
 }
 
 checkBrowsers(paths.appPath)
-    .then(() => {
-        const port = choosePort(HOST, DEFAULT_PORT);
-        console.log(port);
-        return "helo";
-    })
-    .then((v) => {
-        console.log(v);
+    .then(() => choosePort(HOST, DEFAULT_PORT))
+    .then((port) => {
+        console.log(chalk.cyan("Port: "), chalk.yellow.bold(port));
+        if (!port) {
+            console.log(chalk.red.bold("we have not found a port!"));
+            return;
+        }
     });
