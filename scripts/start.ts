@@ -15,6 +15,7 @@ import paths from "./utils/paths";
 import { loadEnvironment } from "./utils/env";
 import webpackDevServer from "webpack-dev-server";
 import chalk from "chalk";
+import WebpackConfig from "../config/webpack.dev";
 
 import { checkRequiredFiles, clearConsole, checkBrowsers, choosePort } from "./utils/lib";
 
@@ -43,13 +44,7 @@ const DEFAULT_PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 
 if (process.env.HOST) {
-    console.log(
-        chalk.cyan(
-            `Attempting to bind to HOST environment variable: ${chalk.yellow.bold(
-                process.env.HOST
-            )}`
-        )
-    );
+    console.log(chalk.cyan(`Attempting to bind to HOST environment variable: ${chalk.yellow.bold(process.env.HOST)}`));
 }
 
 checkBrowsers(paths.appPath)
@@ -60,4 +55,8 @@ checkBrowsers(paths.appPath)
             console.log(chalk.red.bold("we have not found a port!"));
             return;
         }
+
+        // const config = new WebpackConfig();
+        const config = WebpackConfig.createConfig();
+        console.log(config)
     });

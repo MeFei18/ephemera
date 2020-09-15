@@ -11,6 +11,10 @@ import path from "path";
 import paths from "./paths";
 import { config } from "./lib/dotenv";
 
+interface code {
+    [key: string]: string;
+}
+
 /**
  * 加载环境变量
  */
@@ -50,16 +54,16 @@ export const getClientEnvironment = (publicUrl: string) => {
         .filter((key) => REACT_APP.test(key))
         .reduce(
             (env, key) => {
-                env[key] = process.env[key];
+                env[key] = process.env[key] || "";
                 return env;
             },
-            Object({
+            {
                 NODE_ENV: process.env.NODE_ENV || "development",
                 PUBLIC_URL: publicUrl,
                 WDS_SOCKET_HOST: process.env.WDS_SOCKET_HOST,
                 WDS_SOCKET_PATH: process.env.WDS_SOCKET_PATH,
                 WDS_SOCKET_PORT: process.env.WDS_SOCKET_PORT,
-            })
+            } as code
         );
     const stringified = {
         "process.env": Object.keys(raw).reduce((env, key) => {
