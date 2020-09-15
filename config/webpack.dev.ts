@@ -9,7 +9,7 @@ class WebpackConfig {
     private static isEnvDevelopment: boolean;
     private static isEnvProduction: boolean;
     private static isEnvProductionProfile: boolean;
-    private static env;
+    private static env: SCRIPT.ENV.clientenv;
 
     constructor(NODE_ENV?: string) {
         // console.log(env);
