@@ -58,5 +58,5 @@ checkBrowsers(paths.appPath)
 
         // const config = new WebpackConfig();
         const config = WebpackConfig.createConfig();
-        console.log(config)
+        console.log(config);
     });

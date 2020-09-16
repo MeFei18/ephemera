@@ -10,6 +10,7 @@ import fs from "fs";
 import path from "path";
 import paths from "./paths";
 import { config } from "./lib/dotenv";
+import { SCRIPT } from "../script";
 
 /**
  * 加载环境变量

@@ -1,4 +1,4 @@
-declare namespace SCRIPT {
+export declare namespace SCRIPT {
     interface code {
         [key: string]: string | number | boolean | undefined;
     }
