@@ -32,7 +32,8 @@ class WebpackConfig {
         this.appPackageJson = require(paths.appPackageJson);
 
         // console.log("======", modules.hasTsConfig);
-        modules.getOption()
+        modules.getAdditionalModulePaths();
+        // console.log(modules.options);
         return WebpackConfig.config();
     }
 
