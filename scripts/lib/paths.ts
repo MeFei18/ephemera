@@ -8,7 +8,7 @@
 
 import fs from "fs";
 import path from "path";
-import { getPublicUrlOrPath } from "./lib/getPublicUrlOrPath";
+import { getPublicUrlOrPath } from "../utils";
 
 const appDirectory = fs.realpathSync(process.cwd());
 const resolveApp = (relativePath: string) => path.resolve(appDirectory, relativePath);
@@ -34,9 +34,7 @@ const moduleFileExtensions = [
 ];
 
 const resolveModule = (filePath: string) => {
-    const extension = moduleFileExtensions.find((ex) =>
-        fs.existsSync(resolveApp(`${filePath}.${ex}`))
-    );
+    const extension = moduleFileExtensions.find((ex) => fs.existsSync(resolveApp(`${filePath}.${ex}`)));
     if (extension) {
         return resolveApp(`${filePath}.${extension}`);
     }

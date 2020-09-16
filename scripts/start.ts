@@ -11,13 +11,13 @@
  */
 import fs from "fs";
 import webpack from "webpack";
-import paths from "./utils/paths";
-import { loadEnvironment } from "./utils/env";
+import paths from "./lib/paths";
+import { loadEnvironment } from "./lib/env";
 import webpackDevServer from "webpack-dev-server";
 import chalk from "chalk";
 import WebpackConfig from "../config/webpack.dev";
 
-import { checkRequiredFiles, clearConsole, checkBrowsers, choosePort } from "./utils/lib";
+import { checkRequiredFiles, clearConsole, checkBrowsers, choosePort } from "./utils";
 
 process.env.BABEL_ENV = "development";
 process.env.NODE_ENV = "development";

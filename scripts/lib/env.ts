@@ -9,7 +9,7 @@
 import fs from "fs";
 import path from "path";
 import paths from "./paths";
-import { config } from "./lib/dotenv";
+import { config } from "../utils";
 import { SCRIPT } from "../script";
 
 /**
