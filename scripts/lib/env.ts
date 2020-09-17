@@ -11,6 +11,7 @@ import path from "path";
 import paths from "./paths";
 import { config } from "../utils";
 import { SCRIPT } from "../script";
+import webpack from "webpack";
 
 /**
  * 加载环境变量
@@ -66,7 +67,7 @@ export const getClientEnvironment = (publicUrl: string): SCRIPT.ENV.clientenv =>
         "process.env": Object.keys(raw).reduce((env, key) => {
             env[key] = JSON.stringify(raw[key]);
             return env;
-        }, {} as SCRIPT.code),
+        }, Object({})) as webpack.DefinePlugin.CodeValueObject,
     };
     return { raw, stringified };
 };

@@ -11,9 +11,13 @@ import { modules } from "../scripts/lib/modules";
 import { ModuleScopePlugin, getLocalIdent } from "../scripts/utils";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import HtmlWebpackPlugin from "html-webpack-plugin";
+import ManifestPlugin from "webpack-manifest-plugin";
+import WorkboxWebpackPlugin from "workbox-webpack-plugin";
 
+// const ManifestPlugin = require("webpack-manifest-plugin");
 const postcssNormalize = require("postcss-normalize");
 const PnpWebpackPlugin = require("pnp-webpack-plugin");
+const CaseSensitivePathsPlugin = require("case-sensitive-paths-webpack-plugin");
 
 class WebpackConfig {
     private static cssRegex = /\.css$/;
@@ -29,6 +33,7 @@ class WebpackConfig {
     private static env: SCRIPT.ENV.clientenv = getClientEnvironment(paths.publicUrlOrPath.slice(0, -1));
     private static useTypeScript: boolean;
     private static imageInlineSizeLimit: number;
+    private static shouldInlineRuntimeChunk: boolean;
 
     /**
      *根据环境变量NODE_ENV创建webpack配置
@@ -42,6 +47,7 @@ class WebpackConfig {
         this.appPackageJson = require(paths.appPackageJson);
         this.useTypeScript = fs.existsSync(paths.appTsConfig);
         this.imageInlineSizeLimit = parseInt(process.env.IMAGE_INLINE_SIZE_LIMIT || "10000");
+        this.shouldInlineRuntimeChunk = process.env.INLINE_RUNTIME_CHUNK !== "false";
 
         return WebpackConfig.config();
     }
@@ -228,6 +234,94 @@ class WebpackConfig {
         };
     }
 
+    private static _webpackPlugin(): Configuration["plugins"] {
+        let plugins: Configuration["plugins"] = [
+            /**
+             * generate index.html
+             */
+            new HtmlWebpackPlugin(
+                Object.assign(
+                    {},
+                    {
+                        inject: true,
+                        template: paths.appHtml,
+                    },
+                    this.isEnvProduction
+                        ? {
+                              minify: {
+                                  removeComments: true,
+                                  collapseWhitespace: true,
+                                  removeRedundantAttributes: true,
+                                  useShortDoctype: true,
+                                  removeEmptyAttributes: true,
+                                  removeStyleLinkTypeAttributes: true,
+                                  keepClosingSlash: true,
+                                  minifyJS: true,
+                                  minifyCSS: true,
+                                  minifyURLs: true,
+                              },
+                          }
+                        : undefined
+                )
+            ),
+
+            /**
+             * 使某些环境变量适用于开发中
+             * NODE_ENV === 'production'
+             */
+            new webpack.DefinePlugin(this.env.stringified),
+
+            new ManifestPlugin({
+                fileName: "asset-manifest.json",
+                publicPath: paths.publicUrlOrPath,
+                generate: (seed, files, entrypoints) => {
+                    const manifestFiles = files.reduce((manifest, file) => {
+                        if (file.name) {
+                            //@ts-ignore
+                            manifest[file.name] = file.path;
+                        }
+                        return manifest;
+                    }, seed);
+                    const entrypointFiles = entrypoints.main.filter((fileName) => !fileName.endsWith(".map"));
+
+                    return {
+                        files: manifestFiles,
+                        entrypoints: entrypointFiles,
+                    };
+                },
+            }),
+
+            new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
+        ];
+
+        if (this.isEnvDevelopment) {
+            plugins = [...plugins, new webpack.HotModuleReplacementPlugin(), new CaseSensitivePathsPlugin()];
+        }
+
+        if (this.isEnvProduction) {
+            plugins = [
+                ...plugins,
+
+                new MiniCssExtractPlugin({
+                    filename: "static/css/[name].[contenthash:8].css",
+                    chunkFilename: "static/css/[name].[contenthash:8].chunk.css",
+                }),
+
+                new WorkboxWebpackPlugin.GenerateSW({
+                    clientsClaim: true,
+                    exclude: [/\.map$/, /asset-manifest\.json$/],
+                    //@ts-ignore
+                    importWorkboxFrom: "cdn",
+                    navigateFallback: paths.publicUrlOrPath + "index.html",
+                    navigateFallbackBlacklist: [new RegExp("^/_"), new RegExp("/[^/?]+\\.[^/]+$")],
+                }), 
+            ];
+        }
+
+
+        return plugins;
+    }
+
     /**
      * js压缩c插件(支持es6)
      */
@@ -372,36 +466,7 @@ class WebpackConfig {
             /**
              * 插件管理
              */
-            plugins: [
-
-                new HtmlWebpackPlugin(
-                    Object.assign(
-                        {},
-                        {
-                            inject: true,
-                            template: paths.appHtml,
-                        },
-                        this.isEnvProduction
-                            ? {
-                                  minify: {
-                                      removeComments: true,
-                                      collapseWhitespace: true,
-                                      removeRedundantAttributes: true,
-                                      useShortDoctype: true,
-                                      removeEmptyAttributes: true,
-                                      removeStyleLinkTypeAttributes: true,
-                                      keepClosingSlash: true,
-                                      minifyJS: true,
-                                      minifyCSS: true,
-                                      minifyURLs: true,
-                                  },
-                              }
-                            : undefined
-                    )
-                ),
-
-                
-            ],
+            plugins: this._webpackPlugin(),
         };
     }
 }

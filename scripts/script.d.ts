@@ -1,3 +1,4 @@
+import webpack from "webpack";
 export declare namespace SCRIPT {
     interface code {
         [key: string]: string | number | boolean | Function | undefined;
@@ -20,7 +21,7 @@ export declare namespace SCRIPT {
         interface clientenv {
             raw: code;
             stringified: {
-                "process.env": code;
+                "process.env": webpack.DefinePlugin.CodeValueObject;
             };
         }
     }
