@@ -58,5 +58,10 @@ checkBrowsers(paths.appPath)
 
         // const config = new WebpackConfig();
         const config = WebpackConfig.createConfig();
-        console.log(config);
+        const protocol = process.env.HTTPS === "true" ? "https" : "http";
+        const appName = require(paths.appPackageJson).name;
+        const useTypeScript = fs.existsSync(paths.appTsConfig);
+        const tscCompileOnError = process.env.TSC_COMPILE_ON_ERROR === "true";
+
+        console.log(appName);
     });

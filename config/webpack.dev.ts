@@ -314,10 +314,9 @@ class WebpackConfig {
                     importWorkboxFrom: "cdn",
                     navigateFallback: paths.publicUrlOrPath + "index.html",
                     navigateFallbackBlacklist: [new RegExp("^/_"), new RegExp("/[^/?]+\\.[^/]+$")],
-                }), 
+                }),
             ];
         }
-
 
         return plugins;
     }
@@ -467,6 +466,17 @@ class WebpackConfig {
              * 插件管理
              */
             plugins: this._webpackPlugin(),
+            node: {
+                module: "empty",
+                dgram: "empty",
+                dns: "mock",
+                fs: "empty",
+                http2: "empty",
+                net: "empty",
+                tls: "empty",
+                child_process: "empty",
+            },
+            performance: false,
         };
     }
 }
