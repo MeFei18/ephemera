@@ -1,6 +1,19 @@
 export declare namespace SCRIPT {
     interface code {
-        [key: string]: string | number | boolean | undefined;
+        [key: string]: string | number | boolean | Function | undefined;
+    }
+
+    namespace WEBPACK {
+        interface cssOPtions {
+            importLoaders: number;
+            sourceMap: boolean;
+            modules?: any;
+        }
+
+        interface loaders {
+            loader: string;
+            options: code;
+        }
     }
 
     namespace ENV {

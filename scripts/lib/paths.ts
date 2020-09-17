@@ -19,7 +19,7 @@ const publicUrlOrPath = getPublicUrlOrPath(
     process.env.PUBLIC_URL
 );
 
-const moduleFileExtensions = [
+export const moduleFileExtensions = [
     "web.mjs",
     "mjs",
     "web.js",
