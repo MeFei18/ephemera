@@ -17,7 +17,7 @@ import webpackDevServer from "webpack-dev-server";
 import chalk from "chalk";
 import WebpackConfig from "../config/webpack.dev";
 
-import { checkRequiredFiles, clearConsole, checkBrowsers, choosePort } from "./utils";
+import { checkRequiredFiles, clearConsole, checkBrowsers, choosePort, prepareUrls } from "./utils";
 
 process.env.BABEL_ENV = "development";
 process.env.NODE_ENV = "development";
@@ -44,7 +44,13 @@ const DEFAULT_PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 
 if (process.env.HOST) {
-    console.log(chalk.cyan(`Attempting to bind to HOST environment variable: ${chalk.yellow.bold(process.env.HOST)}`));
+    console.log(
+        chalk.cyan(
+            `Attempting to bind to HOST environment variable: ${chalk.yellow.bold(
+                process.env.HOST
+            )}`
+        )
+    );
 }
 
 checkBrowsers(paths.appPath)
@@ -63,5 +69,6 @@ checkBrowsers(paths.appPath)
         const useTypeScript = fs.existsSync(paths.appTsConfig);
         const tscCompileOnError = process.env.TSC_COMPILE_ON_ERROR === "true";
 
-        console.log(appName);
+        const urls = prepareUrls(protocol, HOST, port, paths.publicUrlOrPath.slice(0, -1));
+        console.log(urls);
     });
