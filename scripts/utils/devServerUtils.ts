@@ -1,7 +1,7 @@
 import net from "net";
 import url from "url";
 import chalk from "chalk";
-import { getIp } from "./address";
+import { Address } from "./address";
 import path from "path";
 import fs from "fs";
 
@@ -50,7 +50,7 @@ export const prepareUrls = (protocol: string, host: string, port: number, pathna
         prettyHost = "localhost";
 
         try {
-            lanUrlForConfig = getIp();
+            lanUrlForConfig = Address.ip();
             if (lanUrlForConfig) {
                 if (/^10[.]|^172[.](1[6-9]|2[0-9]|3[0-1])[.]|^192[.]168[.]/.test(lanUrlForConfig)) {
                     lanUrlForTerminal = prettyPrintUrl(lanUrlForConfig);
@@ -94,7 +94,7 @@ function resolveLoopback(proxy: string) {
         // Check if we're on a network; if we are, chances are we can resolve
         // localhost. Otherwise, we can just be safe and assume localhost is
         // IPv4 for maximum compatibility.
-        if (!address.ip()) {
+        if (!Address.ip()) {
             o.hostname = "127.0.0.1";
         }
     } catch (_ignored) {
@@ -135,7 +135,70 @@ export const prepareProxy = (proxy: string, appPublicFolder: string, servedPathn
         process.exit(1);
     }
 
-    let target;
+    let target: string;
     if (process.platform === "win32") {
+        target = resolveLoopback(proxy);
+    } else {
+        target = proxy;
     }
+
+    return [
+        {
+            target,
+            logLevel: "silent",
+            context: (pathname: string, req: any) => {
+                return (
+                    req.method !== "GET" ||
+                    (mayProxy(pathname) &&
+                        req.headers.accept &&
+                        req.headers.accept.indexOf("text/html") === -1)
+                );
+            },
+            onProxyReq: (proxyReq: any) => {
+                if (proxyReq.getHeader("origin")) {
+                    proxyReq.setHeader("origin", target);
+                }
+            },
+            onError: onProxyError(target),
+            secure: false,
+            changeOrigin: true,
+            ws: true,
+            xfwd: true,
+        },
+    ];
 };
+
+function onProxyError(proxy: string) {
+    return (err: any, req: any, res: any) => {
+        const host = req.headers && req.headers.host;
+        console.log(
+            chalk.red("Proxy error:") +
+                " Could not proxy request " +
+                chalk.cyan(req.url) +
+                " from " +
+                chalk.cyan(host) +
+                " to " +
+                chalk.cyan(proxy) +
+                "."
+        );
+        console.log(
+            "See https://nodejs.org/api/errors.html#errors_common_system_errors for more information (" +
+                chalk.cyan(err.code) +
+                ")."
+        );
+        if (res.writeHead && !res.headersSent) {
+            res.writeHead(500);
+        }
+        res.end(
+            "Proxy error: Could not proxy request " +
+                req.url +
+                " from " +
+                host +
+                " to " +
+                proxy +
+                " (" +
+                err.code +
+                ")."
+        );
+    };
+}
