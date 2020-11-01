@@ -4,6 +4,32 @@ import chalk from "chalk";
 import { Address } from "./address";
 import path from "path";
 import fs from "fs";
+import webpack from "webpack";
+import { clearConsole } from "./clearConsole";
+import { typescriptFormatter } from "./typescriptFormatter";
+import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin";
+import { formatWebpackMessages } from "./formatWebpackMessage";
+
+interface Urls {
+    lanUrlForConfig?: string;
+    lanUrlForTerminal?: string;
+    localUrlForTerminal: string;
+    localUrlForBrowser: string;
+}
+
+interface compilerProps {
+    appName: string;
+    config: webpack.Configuration;
+    devSocket: {
+        warnings(warn: any): void;
+        errors(err: any): void;
+    };
+    urls: Urls;
+    useYarn: boolean;
+    useTypeScript: boolean;
+    tscCompileOnError: boolean;
+    webpack: Function;
+}
 
 const listen = (port: number): Promise<number> => {
     const server = net.createServer().listen(port);
@@ -26,7 +52,7 @@ const listen = (port: number): Promise<number> => {
 export const choosePort = (host: string, defaultPort: number): Promise<number> =>
     listen(defaultPort);
 
-export const prepareUrls = (protocol: string, host: string, port: number, pathname = "/") => {
+export const prepareUrls = (protocol: string, host: string, port: number, pathname = "/"): Urls => {
     const formatUrl = (hostname: string) => {
         return url.format({
             protocol,
@@ -104,8 +130,6 @@ function resolveLoopback(proxy: string) {
 }
 
 export const prepareProxy = (proxy: string, appPublicFolder: string, servedPathname: string) => {
-    console.log(proxy, appPublicFolder, servedPathname);
-
     if (!proxy) {
         return;
     }
@@ -201,4 +225,179 @@ function onProxyError(proxy: string) {
                 ")."
         );
     };
+}
+
+export class DevServerUtils {
+    private static isInteractive = process.stdout.isTTY;
+
+    private static printInstructions(
+        appName: unknown,
+        urls: { lanUrlForTerminal: any; localUrlForTerminal: any },
+        useYarn: any
+    ) {
+        console.log();
+        console.log(`You can now view ${chalk.bold(appName)} in the browser.`);
+        console.log();
+
+        if (urls.lanUrlForTerminal) {
+            console.log(`  ${chalk.bold("Local:")}            ${urls.localUrlForTerminal}`);
+            console.log(`  ${chalk.bold("On Your Network:")}  ${urls.lanUrlForTerminal}`);
+        } else {
+            console.log(`  ${urls.localUrlForTerminal}`);
+        }
+
+        console.log();
+        console.log("Note that the development build is not optimized.");
+        console.log(
+            `To create a production build, use ` +
+                `${chalk.cyan(`${useYarn ? "yarn" : "npm run"} build`)}.`
+        );
+        console.log();
+    }
+
+    static createCompiler(props: compilerProps) {
+        const {
+            appName,
+            config,
+            devSocket,
+            urls,
+            useYarn,
+            useTypeScript,
+            tscCompileOnError,
+            // webpack,
+        } = props;
+
+        let compiler: webpack.Compiler;
+
+        try {
+            compiler = webpack(config);
+        } catch (err) {
+            console.log(chalk.red("Failed to compile."));
+            console.log(err.message || err);
+            process.exit(1);
+        }
+
+        /**
+         * 加载文件变更监听事件
+         */
+        compiler.hooks.invalid.tap("invalid", () => {
+            if (this.isInteractive) {
+                clearConsole();
+            }
+            console.log("Compiling...");
+        });
+
+        let isFirstCompile = true;
+        let tsMessagesPromise: any;
+        let tsMessagesResolver: (msg: any) => void;
+
+        if (useTypeScript) {
+            compiler.hooks.beforeCompile.tap("beforeCompile", () => {
+                tsMessagesPromise = new Promise((resolve) => {
+                    tsMessagesResolver = (msgs: any) => resolve(msgs);
+                });
+            });
+
+            ForkTsCheckerWebpackPlugin.getCompilerHooks(compiler).waiting.tap(
+                "afterTypeScriptCheck",
+                (diagnostics: any, lints: any) => {
+                    const allMsgs = [...diagnostics, ...lints];
+                    const format = (message: any) =>
+                        `${message.file}\n${typescriptFormatter(message, true)}`;
+
+                    tsMessagesResolver({
+                        errors: allMsgs.filter((msg) => msg.severity === "error").map(format),
+                        warnings: allMsgs.filter((msg) => msg.severity === "warning").map(format),
+                    });
+                }
+            );
+        }
+
+        // "done" event fires when webpack has finished recompiling the bundle.
+        // Whether or not you have warnings or errors, you will get this event.
+        compiler.hooks.done.tap("done", async (stats) => {
+            if (DevServerUtils.isInteractive) {
+                clearConsole();
+            }
+
+            const statsData = stats.toJson({
+                all: false,
+                warnings: true,
+                errors: true,
+            });
+
+            if (useTypeScript && statsData.errors.length === 0) {
+                const delayMsg = setTimeout(() => {
+                    console.log(
+                        chalk.yellow("Files successfully emitted, waiting for typecheck results...")
+                    );
+                }, 100);
+
+                const messages = await tsMessagesPromise;
+                clearTimeout(delayMsg);
+
+                if (tscCompileOnError) {
+                    statsData.warnings.push(...messages.errors);
+                } else {
+                    statsData.errors.push(...messages.errors);
+                }
+
+                statsData.warnings.push(...messages.warnings);
+
+                if (messages.errors.length > 0) {
+                    if (tscCompileOnError) {
+                        devSocket.warnings(messages.errors);
+                    } else {
+                        devSocket.errors(messages.errors);
+                    }
+                } else if (messages.warnings.length > 0) {
+                    devSocket.warnings(messages.warnings);
+                }
+
+                if (DevServerUtils.isInteractive) {
+                    clearConsole();
+                }
+            }
+
+            const messages = formatWebpackMessages(statsData);
+            const isSuccessful = !messages.errors.length && !messages.warnings.length;
+            if (isSuccessful) {
+                console.log(chalk.green("Compiled successfully!"));
+            }
+            if (isSuccessful && (DevServerUtils.isInteractive || isFirstCompile)) {
+                DevServerUtils.printInstructions(appName, urls, useYarn);
+            }
+            isFirstCompile = false;
+
+            // If errors exist, only show errors.
+            if (messages.errors.length) {
+                // Only keep the first error. Others are often indicative
+                // of the same problem, but confuse the reader with noise.
+                if (messages.errors.length > 1) {
+                    messages.errors.length = 1;
+                }
+                console.log(chalk.red("Failed to compile.\n"));
+                console.log(messages.errors.join("\n\n"));
+                return;
+            }
+
+            // Show warnings if no errors were found.
+            if (messages.warnings.length) {
+                console.log(chalk.yellow("Compiled with warnings.\n"));
+                console.log(messages.warnings.join("\n\n"));
+
+                // Teach some ESLint tricks.
+                console.log(
+                    "\nSearch for the " +
+                        chalk.underline(chalk.yellow("keywords")) +
+                        " to learn more about each warning."
+                );
+                console.log(
+                    "To ignore, add " +
+                        chalk.cyan("// eslint-disable-next-line") +
+                        " to the line before.\n"
+                );
+            }
+        });
+    }
 }
