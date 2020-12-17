@@ -376,7 +376,9 @@ export class DevServerUtils {
                 if (messages.errors.length > 1) {
                     messages.errors.length = 1;
                 }
-                console.log(chalk.red("Failed to compile.\n"));
+                console.log(chalk.red("Failed to compile.\n"));+
+
+                
                 console.log(messages.errors.join("\n\n"));
                 return;
             }
